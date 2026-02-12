@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/schema/schema</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/AttendanceManagementSystem.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/views/MarkAttendanceFrame.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/views/ViewAttendanceFrame.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/dao/AttendanceDAO.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/dao/StudentDAO.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/dao/SubjectDAO.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/dao/UserDAO.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/database/DatabaseConnection.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/models/Attendance.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/models/Student.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/models/Subject.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/models/User.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/views/AddStudentFrame.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/views/AddSubjectFrame.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/views/LoginFrame.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/views/RegisterFrame.java</file>
+            <file>file:/home/bishalkoirala/Desktop/AttendenceManagementSystem/src/attendencemanagementsystem/views/DashboardFrame.java</file>
+        </group>
+    </open-files>
+</project-private>
