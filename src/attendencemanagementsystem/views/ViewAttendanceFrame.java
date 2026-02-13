@@ -8,325 +8,247 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.text.SimpleDateFormat;
-import javax.swing.border.TitledBorder;
 
 public class ViewAttendanceFrame extends JPanel {
     private AttendanceDAO attendanceDAO;
     private StudentDAO studentDAO;
     private SubjectDAO subjectDAO;
     
-    private JComboBox<Student> studentBox;
-    private JComboBox<Subject> subjectBox;
+    private JComboBox<String> studentBox;
+    private JComboBox<String> subjectBox;
     private JTable table;
     private DefaultTableModel tableModel;
     private JLabel summaryLabel;
-    private JLabel percentageLabel;
-    private JLabel totalClassesLabel;
-    private JLabel presentLabel;
-    private JLabel absentLabel;
-    private JPanel statsPanel;
-    private JPanel chartPanel;
+    private JLabel totalStudentsLabel;
+    private JLabel totalSubjectsLabel;
+    private JLabel totalRecordsLabel;
+    private JLabel overallPercentLabel;
     
-    // Color constants
-    private final Color PRESENT_COLOR = new Color(46, 204, 113);
-    private final Color ABSENT_COLOR = new Color(231, 76, 60);
-    private final Color OVERALL_COLOR = new Color(52, 152, 219);
-    private final Color WARNING_COLOR = new Color(241, 196, 15);
+    private List<Student> studentsList;
+    private List<Subject> subjectsList;
     
     public ViewAttendanceFrame() {
         this.attendanceDAO = new AttendanceDAO();
         this.studentDAO = new StudentDAO();
         this.subjectDAO = new SubjectDAO();
+        
         setBackground(Color.WHITE);
-        setLayout(new BorderLayout(0, 20));
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
         initComponents();
         refreshData();
-        loadOverallStatistics(); // Load overall stats
     }
     
     private void initComponents() {
         // Header
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         headerPanel.setBackground(Color.WHITE);
         
-        JLabel titleLabel = new JLabel("📈 ATTENDANCE REPORTS & ANALYTICS");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(44, 62, 80));
-        headerPanel.add(titleLabel, BorderLayout.WEST);
+        JLabel titleLabel = new JLabel("ATTENDANCE REPORTS");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        headerPanel.add(titleLabel);
         
-        JLabel dateLabel = new JLabel(new SimpleDateFormat("EEEE, MMMM d, yyyy").format(new Date()));
+        JLabel dateLabel = new JLabel(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
         dateLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        dateLabel.setForeground(new Color(100, 100, 100));
-        headerPanel.add(dateLabel, BorderLayout.EAST);
+        headerPanel.add(dateLabel);
         
         add(headerPanel, BorderLayout.NORTH);
         
-        // Main Content - Split into two columns
-        JPanel mainContent = new JPanel(new GridLayout(1, 2, 20, 0));
-        mainContent.setBackground(Color.WHITE);
+        // Center Panel - Split into left and right
+        JPanel centerPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        centerPanel.setBackground(Color.WHITE);
         
-        // LEFT COLUMN - Filters and Student Stats
-        JPanel leftColumn = new JPanel(new BorderLayout(0, 15));
-        leftColumn.setBackground(Color.WHITE);
+        // LEFT PANEL - Filters and Student Stats
+        JPanel leftPanel = new JPanel(new BorderLayout(10, 10));
+        leftPanel.setBackground(Color.WHITE);
         
         // Filter Panel
-        JPanel filterPanel = new JPanel(new GridBagLayout());
-        filterPanel.setBackground(new Color(249, 249, 249));
-        filterPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
+        JPanel filterPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        filterPanel.setBackground(new Color(240, 240, 240));
+        filterPanel.setBorder(BorderFactory.createTitledBorder("Filter Attendance"));
         
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridwidth = 1;
-        
-        // Filter Title
-        JLabel filterTitle = new JLabel("🔍 FILTER ATTENDANCE");
-        filterTitle.setFont(new Font("Arial", Font.BOLD, 16));
-        filterTitle.setForeground(new Color(44, 62, 80));
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        filterPanel.add(filterTitle, gbc);
-        
-        // Separator
-        JSeparator sep = new JSeparator();
-        sep.setForeground(new Color(200, 200, 200));
-        gbc.gridy = 1;
-        filterPanel.add(sep, gbc);
-        
-        // Student Selection
-        gbc.gridwidth = 1;
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        filterPanel.add(new JLabel("👤 Student:"), gbc);
-        gbc.gridx = 1;
+        filterPanel.add(new JLabel("Student:"));
         studentBox = new JComboBox<>();
-        studentBox.setPreferredSize(new Dimension(200, 35));
-        studentBox.setFont(new Font("Arial", Font.PLAIN, 13));
-        studentBox.setBackground(Color.WHITE);
-        studentBox.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
-        studentBox.addActionListener(e -> loadStudentAttendance());
-        filterPanel.add(studentBox, gbc);
+        studentBox.addActionListener(e -> loadAttendance());
+        filterPanel.add(studentBox);
         
-        // Subject Selection
-        gbc.gridy = 3;
-        gbc.gridx = 0;
-        filterPanel.add(new JLabel("📚 Subject:"), gbc);
-        gbc.gridx = 1;
+        filterPanel.add(new JLabel("Subject:"));
         subjectBox = new JComboBox<>();
-        subjectBox.setPreferredSize(new Dimension(200, 35));
-        subjectBox.setFont(new Font("Arial", Font.PLAIN, 13));
-        subjectBox.setBackground(Color.WHITE);
-        subjectBox.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180)));
-        subjectBox.addActionListener(e -> loadStudentAttendance());
-        filterPanel.add(subjectBox, gbc);
+        subjectBox.addActionListener(e -> loadAttendance());
+        filterPanel.add(subjectBox);
         
-        // Refresh Button
-        gbc.gridy = 4;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(15, 8, 8, 8);
-        JButton refreshBtn = new JButton("🔄 REFRESH DATA");
-        refreshBtn.setFont(new Font("Arial", Font.BOLD, 13));
-        refreshBtn.setBackground(new Color(52, 152, 219));
-        refreshBtn.setForeground(Color.WHITE);
-        refreshBtn.setFocusPainted(false);
-        refreshBtn.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
-        refreshBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        refreshBtn.addActionListener(e -> {
-            refreshData();
-            loadStudentAttendance();
-            loadOverallStatistics();
+        JButton refreshBtn = new JButton("REFRESH");
+        refreshBtn.addActionListener(e -> refreshData());
+        filterPanel.add(refreshBtn);
+        
+        JButton clearBtn = new JButton("CLEAR");
+        clearBtn.addActionListener(e -> {
+            studentBox.setSelectedIndex(0);
+            subjectBox.setSelectedIndex(0);
         });
-        filterPanel.add(refreshBtn, gbc);
+        filterPanel.add(clearBtn);
         
-        leftColumn.add(filterPanel, BorderLayout.NORTH);
+        leftPanel.add(filterPanel, BorderLayout.NORTH);
         
-        // Student Statistics Panel
-        statsPanel = new JPanel();
-        statsPanel.setBackground(new Color(249, 249, 249));
-        statsPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
-        statsPanel.setLayout(new GridBagLayout());
-        leftColumn.add(statsPanel, BorderLayout.CENTER);
+        // Student Stats Panel
+        JPanel statsPanel = new JPanel(new GridLayout(8, 2, 10, 5));
+        statsPanel.setBackground(new Color(240, 240, 240));
+        statsPanel.setBorder(BorderFactory.createTitledBorder("Student Statistics"));
         
-        // RIGHT COLUMN - Overall Statistics and Chart
-        JPanel rightColumn = new JPanel(new BorderLayout(0, 15));
-        rightColumn.setBackground(Color.WHITE);
+        statsPanel.add(new JLabel("Roll No:"));
+        JLabel rollNoVal = new JLabel("-");
+        rollNoVal.setFont(new Font("Arial", Font.BOLD, 12));
+        statsPanel.add(rollNoVal);
         
-        // Overall Statistics Panel
-        JPanel overallPanel = new JPanel(new GridBagLayout());
-        overallPanel.setBackground(new Color(249, 249, 249));
-        overallPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
+        statsPanel.add(new JLabel("Name:"));
+        JLabel nameVal = new JLabel("-");
+        nameVal.setFont(new Font("Arial", Font.BOLD, 12));
+        statsPanel.add(nameVal);
         
-        GridBagConstraints ogbc = new GridBagConstraints();
-        ogbc.insets = new Insets(8, 8, 8, 8);
-        ogbc.fill = GridBagConstraints.HORIZONTAL;
-        ogbc.gridwidth = 2;
+        statsPanel.add(new JLabel("Department:"));
+        JLabel deptVal = new JLabel("-");
+        deptVal.setFont(new Font("Arial", Font.BOLD, 12));
+        statsPanel.add(deptVal);
         
-        JLabel overallTitle = new JLabel("📊 OVERALL STATISTICS");
-        overallTitle.setFont(new Font("Arial", Font.BOLD, 16));
-        overallTitle.setForeground(new Color(44, 62, 80));
-        ogbc.gridx = 0;
-        ogbc.gridy = 0;
-        overallPanel.add(overallTitle, ogbc);
+        statsPanel.add(new JLabel("Semester:"));
+        JLabel semVal = new JLabel("-");
+        semVal.setFont(new Font("Arial", Font.BOLD, 12));
+        statsPanel.add(semVal);
         
-        JSeparator overallSep = new JSeparator();
-        overallSep.setForeground(new Color(200, 200, 200));
-        ogbc.gridy = 1;
-        overallPanel.add(overallSep, ogbc);
+        statsPanel.add(new JLabel("Present:"));
+        JLabel presentVal = new JLabel("0");
+        presentVal.setForeground(new Color(46, 204, 113));
+        presentVal.setFont(new Font("Arial", Font.BOLD, 14));
+        statsPanel.add(presentVal);
         
-        // Total Students
-        ogbc.gridwidth = 1;
-        ogbc.gridy = 2;
-        ogbc.gridx = 0;
-        overallPanel.add(new JLabel("👥 Total Students:"), ogbc);
-        ogbc.gridx = 1;
-        JLabel totalStudentsVal = new JLabel("0");
-        totalStudentsVal.setFont(new Font("Arial", Font.BOLD, 14));
-        totalStudentsVal.setForeground(OVERALL_COLOR);
-        overallPanel.add(totalStudentsVal, ogbc);
+        statsPanel.add(new JLabel("Absent:"));
+        JLabel absentVal = new JLabel("0");
+        absentVal.setForeground(new Color(231, 76, 60));
+        absentVal.setFont(new Font("Arial", Font.BOLD, 14));
+        statsPanel.add(absentVal);
         
-        // Total Subjects
-        ogbc.gridy = 3;
-        ogbc.gridx = 0;
-        overallPanel.add(new JLabel("📚 Total Subjects:"), ogbc);
-        ogbc.gridx = 1;
-        JLabel totalSubjectsVal = new JLabel("0");
-        totalSubjectsVal.setFont(new Font("Arial", Font.BOLD, 14));
-        totalSubjectsVal.setForeground(OVERALL_COLOR);
-        overallPanel.add(totalSubjectsVal, ogbc);
+        statsPanel.add(new JLabel("Total Classes:"));
+        JLabel totalVal = new JLabel("0");
+        totalVal.setFont(new Font("Arial", Font.BOLD, 14));
+        statsPanel.add(totalVal);
         
-        // Total Attendance Records
-        ogbc.gridy = 4;
-        ogbc.gridx = 0;
-        overallPanel.add(new JLabel("📋 Total Records:"), ogbc);
-        ogbc.gridx = 1;
-        totalClassesLabel = new JLabel("0");
-        totalClassesLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        totalClassesLabel.setForeground(OVERALL_COLOR);
-        overallPanel.add(totalClassesLabel, ogbc);
+        statsPanel.add(new JLabel("Percentage:"));
+        JLabel percentVal = new JLabel("0%");
+        percentVal.setFont(new Font("Arial", Font.BOLD, 16));
+        statsPanel.add(percentVal);
         
-        // Overall Attendance Percentage
-        ogbc.gridy = 5;
-        ogbc.gridx = 0;
-        overallPanel.add(new JLabel("📈 Overall Attendance:"), ogbc);
-        ogbc.gridx = 1;
-        percentageLabel = new JLabel("0%");
-        percentageLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        percentageLabel.setForeground(OVERALL_COLOR);
-        overallPanel.add(percentageLabel, ogbc);
+        leftPanel.add(statsPanel, BorderLayout.CENTER);
         
-        rightColumn.add(overallPanel, BorderLayout.NORTH);
+        // RIGHT PANEL - Overall Statistics
+        JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
+        rightPanel.setBackground(Color.WHITE);
         
-        // Chart Panel
-        chartPanel = new JPanel() {
+        JPanel overallPanel = new JPanel(new GridLayout(5, 2, 10, 15));
+        overallPanel.setBackground(new Color(240, 240, 240));
+        overallPanel.setBorder(BorderFactory.createTitledBorder("Overall Statistics"));
+        
+        overallPanel.add(new JLabel("Total Students:"));
+        totalStudentsLabel = new JLabel("0");
+        totalStudentsLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        overallPanel.add(totalStudentsLabel);
+        
+        overallPanel.add(new JLabel("Total Subjects:"));
+        totalSubjectsLabel = new JLabel("0");
+        totalSubjectsLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        overallPanel.add(totalSubjectsLabel);
+        
+        overallPanel.add(new JLabel("Total Records:"));
+        totalRecordsLabel = new JLabel("0");
+        totalRecordsLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        overallPanel.add(totalRecordsLabel);
+        
+        overallPanel.add(new JLabel("Overall Attendance:"));
+        overallPercentLabel = new JLabel("0%");
+        overallPercentLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        overallPanel.add(overallPercentLabel);
+        
+        // Simple Chart Panel (just text representation)
+        JPanel chartPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                drawAttendanceChart(g);
+                drawSimpleChart(g);
             }
         };
         chartPanel.setBackground(Color.WHITE);
-        chartPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
-        chartPanel.setPreferredSize(new Dimension(400, 250));
-        rightColumn.add(chartPanel, BorderLayout.CENTER);
+        chartPanel.setBorder(BorderFactory.createTitledBorder("Attendance Distribution"));
+        chartPanel.setPreferredSize(new Dimension(300, 200));
         
-        mainContent.add(leftColumn);
-        mainContent.add(rightColumn);
+        rightPanel.add(overallPanel, BorderLayout.NORTH);
+        rightPanel.add(chartPanel, BorderLayout.CENTER);
         
-        add(mainContent, BorderLayout.CENTER);
+        centerPanel.add(leftPanel);
+        centerPanel.add(rightPanel);
         
-        // Attendance Records Table
-        JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBackground(Color.WHITE);
-        tablePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-                "📋 ATTENDANCE RECORDS",
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 14),
-                new Color(44, 62, 80)
-            ),
-            BorderFactory.createEmptyBorder(15, 15, 15, 15)
-        ));
+        add(centerPanel, BorderLayout.CENTER);
         
+        // Table Panel
         String[] columns = {"Date", "Subject Code", "Subject Name", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         
         table = new JTable(tableModel);
-        table.setRowHeight(35);
-        table.setFont(new Font("Arial", Font.PLAIN, 13));
-        table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
-        table.getTableHeader().setBackground(new Color(52, 152, 219));
-        table.getTableHeader().setForeground(Color.WHITE);
-        table.getTableHeader().setPreferredSize(new Dimension(0, 40));
-        table.setShowGrid(true);
-        table.setGridColor(new Color(230, 230, 230));
-        table.setSelectionBackground(new Color(52, 152, 219, 50));
+        table.setRowHeight(30);
         table.getColumnModel().getColumn(3).setCellRenderer(new StatusRenderer());
         
-        // Set column widths
-        table.getColumnModel().getColumn(0).setPreferredWidth(100);
-        table.getColumnModel().getColumn(1).setPreferredWidth(100);
-        table.getColumnModel().getColumn(2).setPreferredWidth(200);
-        table.getColumnModel().getColumn(3).setPreferredWidth(80);
-        
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Attendance Records"));
         scrollPane.setPreferredSize(new Dimension(900, 200));
-        tablePanel.add(scrollPane, BorderLayout.CENTER);
         
-        // Summary Label
         summaryLabel = new JLabel("Select a student to view attendance details");
-        summaryLabel.setFont(new Font("Arial", Font.ITALIC, 13));
-        summaryLabel.setForeground(new Color(100, 100, 100));
-        summaryLabel.setBorder(BorderFactory.createEmptyBorder(10, 5, 5, 5));
-        tablePanel.add(summaryLabel, BorderLayout.SOUTH);
+        summaryLabel.setFont(new Font("Arial", Font.ITALIC, 12));
         
-        add(tablePanel, BorderLayout.SOUTH);
+        JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.add(scrollPane, BorderLayout.CENTER);
+        southPanel.add(summaryLabel, BorderLayout.SOUTH);
         
-        // Initialize stat labels
-        presentLabel = new JLabel("0");
-        absentLabel = new JLabel("0");
+        add(southPanel, BorderLayout.SOUTH);
+        
+        // Store references for updating stats
+        this.rollNoVal = rollNoVal;
+        this.nameVal = nameVal;
+        this.deptVal = deptVal;
+        this.semVal = semVal;
+        this.presentVal = presentVal;
+        this.absentVal = absentVal;
+        this.totalVal = totalVal;
+        this.percentVal = percentVal;
     }
     
-    // Draw attendance chart
-    private void drawAttendanceChart(Graphics g) {
+    // References for updating stats
+    private JLabel rollNoVal, nameVal, deptVal, semVal, presentVal, absentVal, totalVal, percentVal;
+    
+    private void drawSimpleChart(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
-        int width = chartPanel.getWidth() - 40;
-        int height = chartPanel.getHeight() - 60;
+        int width = getWidth() - 60;
+        int height = 30;
         int x = 30;
-        int y = 30;
+        int y = 50;
         
-        // Get data
-        Student selectedStudent = (Student) studentBox.getSelectedItem();
-        Subject selectedSubject = (Subject) subjectBox.getSelectedItem();
+        // Get selected student
+        int studentIndex = studentBox.getSelectedIndex() - 1;
+        int subjectIndex = subjectBox.getSelectedIndex() - 1;
         
         int total = 0;
         int present = 0;
         
-        if (selectedStudent != null) {
-            List<Attendance> list = attendanceDAO.getAttendanceByStudent(selectedStudent.getId());
-            if (selectedSubject != null) {
-                list.removeIf(a -> a.getSubjectId() != selectedSubject.getId());
+        if (studentIndex >= 0 && studentIndex < studentsList.size()) {
+            Student student = studentsList.get(studentIndex);
+            List<Attendance> list = attendanceDAO.getAttendanceByStudent(student.getId());
+            
+            if (subjectIndex >= 0 && subjectIndex < subjectsList.size()) {
+                Subject subject = subjectsList.get(subjectIndex);
+                list.removeIf(a -> a.getSubjectId() != subject.getId());
             }
+            
             total = list.size();
             present = (int) list.stream().filter(a -> "PRESENT".equals(a.getStatus())).count();
         }
@@ -334,54 +256,38 @@ public class ViewAttendanceFrame extends JPanel {
         int absent = total - present;
         
         // Draw title
-        g2d.setFont(new Font("Arial", Font.BOLD, 14));
-        g2d.setColor(new Color(44, 62, 80));
-        g2d.drawString("Attendance Distribution", x, y - 10);
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        g2d.drawString("Present vs Absent", x, y - 10);
         
         if (total == 0) {
-            g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-            g2d.setColor(Color.GRAY);
-            g2d.drawString("No data available", x + 50, y + 80);
+            g2d.drawString("No data", x, y + 50);
             return;
         }
         
-        // Draw pie chart
-        int startAngle = 0;
-        int presentAngle = (int) (present * 360.0 / total);
-        int absentAngle = (int) (absent * 360.0 / total);
-        
-        // Draw present slice
-        g2d.setColor(PRESENT_COLOR);
-        g2d.fillArc(x, y, width, height, startAngle, presentAngle);
-        
-        // Draw absent slice
-        g2d.setColor(ABSENT_COLOR);
-        g2d.fillArc(x, y, width, height, startAngle + presentAngle, absentAngle);
-        
-        // Draw legend
-        int legendX = x + width + 20;
-        int legendY = y;
-        
-        g2d.setColor(PRESENT_COLOR);
-        g2d.fillRect(legendX, legendY, 15, 15);
+        // Draw present bar
+        int presentWidth = (int) ((present * 1.0 / total) * width);
+        g2d.setColor(new Color(46, 204, 113));
+        g2d.fillRect(x, y, presentWidth, height);
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-        g2d.drawString("Present: " + present + " (" + String.format("%.1f", (present * 100.0 / total)) + "%)", 
-                      legendX + 20, legendY + 12);
+        g2d.drawString("Present: " + present, x + 5, y + 20);
         
-        g2d.setColor(ABSENT_COLOR);
-        g2d.fillRect(legendX, legendY + 25, 15, 15);
+        // Draw absent bar
+        int absentWidth = (int) ((absent * 1.0 / total) * width);
+        g2d.setColor(new Color(231, 76, 60));
+        g2d.fillRect(x + presentWidth, y, absentWidth, height);
         g2d.setColor(Color.BLACK);
-        g2d.drawString("Absent: " + absent + " (" + String.format("%.1f", (absent * 100.0 / total)) + "%)", 
-                      legendX + 20, legendY + 37);
+        g2d.drawString("Absent: " + absent, x + presentWidth + 5, y + 20);
+        
+        // Draw percentage
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        g2d.drawString(String.format("%.1f%%", (present * 100.0 / total)), x + width/2 - 30, y + height + 30);
     }
     
-    // Status Renderer Class
+    // Status Renderer
     class StatusRenderer extends JLabel implements TableCellRenderer {
         public StatusRenderer() {
             setOpaque(true);
             setHorizontalAlignment(CENTER);
-            setFont(new Font("Arial", Font.BOLD, 12));
         }
         
         @Override
@@ -393,134 +299,42 @@ public class ViewAttendanceFrame extends JPanel {
             if ("PRESENT".equals(status)) {
                 setBackground(new Color(212, 237, 218));
                 setForeground(new Color(30, 132, 73));
-                setBorder(BorderFactory.createLineBorder(PRESENT_COLOR, 1));
             } else {
                 setBackground(new Color(248, 215, 218));
                 setForeground(new Color(157, 38, 50));
-                setBorder(BorderFactory.createLineBorder(ABSENT_COLOR, 1));
-            }
-            
-            if (s) {
-                setBackground(getBackground().darker());
             }
             
             return this;
         }
     }
     
-    // Load overall statistics
-    private void loadOverallStatistics() {
-        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-            private int studentCount = 0;
-            private int subjectCount = 0;
-            private int totalRecords = 0;
-            private int presentCount = 0;
-            private double percentage = 0;
-            
-            @Override
-            protected Void doInBackground() {
-                studentCount = studentDAO.getAllStudents().size();
-                subjectCount = subjectDAO.getAllSubjects().size();
-                
-                // Calculate overall attendance
-                List<Attendance> allAttendance = new ArrayList<>();
-                for (Student s : studentDAO.getAllStudents()) {
-                    List<Attendance> list = attendanceDAO.getAttendanceByStudent(s.getId());
-                    allAttendance.addAll(list);
-                    presentCount += list.stream().filter(a -> "PRESENT".equals(a.getStatus())).count();
-                }
-                
-                totalRecords = allAttendance.size();
-                if (totalRecords > 0) {
-                    percentage = (presentCount * 100.0) / totalRecords;
-                }
-                
-                return null;
-            }
-            
-            @Override
-            protected void done() {
-                // Update UI
-                Container parent = getParent();
-                if (parent != null) {
-                    Component[] components = parent.getComponents();
-                    for (Component c : components) {
-                        if (c instanceof JPanel) {
-                            updateOverallStats((JPanel) c, studentCount, subjectCount, totalRecords, percentage);
-                        }
-                    }
-                }
-                
-                totalClassesLabel.setText(String.valueOf(totalRecords));
-                percentageLabel.setText(String.format("%.1f%%", percentage));
-                
-                // Color code percentage
-                if (percentage >= 75) {
-                    percentageLabel.setForeground(PRESENT_COLOR);
-                } else if (percentage >= 60) {
-                    percentageLabel.setForeground(WARNING_COLOR);
-                } else {
-                    percentageLabel.setForeground(ABSENT_COLOR);
-                }
-            }
-        };
-        
-        worker.execute();
-    }
-    
-    private void updateOverallStats(JPanel panel, int students, int subjects, int records, double percentage) {
-        Component[] components = panel.getComponents();
-        for (Component c : components) {
-            if (c instanceof JLabel) {
-                JLabel label = (JLabel) c;
-                String text = label.getText();
-                if (text.contains("Total Students:")) {
-                    // Find the next label
-                    Container parent = label.getParent();
-                    if (parent != null) {
-                        Component[] siblings = parent.getComponents();
-                        for (int i = 0; i < siblings.length; i++) {
-                            if (siblings[i] == label && i + 1 < siblings.length && siblings[i + 1] instanceof JLabel) {
-                                ((JLabel) siblings[i + 1]).setText(String.valueOf(students));
-                                break;
-                            }
-                        }
-                    }
-                } else if (text.contains("Total Subjects:")) {
-                    Container parent = label.getParent();
-                    if (parent != null) {
-                        Component[] siblings = parent.getComponents();
-                        for (int i = 0; i < siblings.length; i++) {
-                            if (siblings[i] == label && i + 1 < siblings.length && siblings[i + 1] instanceof JLabel) {
-                                ((JLabel) siblings[i + 1]).setText(String.valueOf(subjects));
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // Load student-specific attendance
-    private void loadStudentAttendance() {
+    private void loadAttendance() {
         tableModel.setRowCount(0);
         
-        Student student = (Student) studentBox.getSelectedItem();
-        if (student == null) {
-            summaryLabel.setText("👆 Select a student to view attendance details");
-            chartPanel.repaint();
+        int studentIndex = studentBox.getSelectedIndex() - 1;
+        if (studentIndex < 0 || studentIndex >= studentsList.size()) {
+            summaryLabel.setText("Select a student to view attendance");
+            resetStudentStats();
+            repaint();
             return;
         }
         
-        Subject subject = (Subject) subjectBox.getSelectedItem();
+        Student student = studentsList.get(studentIndex);
+        
+        int subjectIndex = subjectBox.getSelectedIndex() - 1;
+        Subject subject = null;
+        if (subjectIndex >= 0 && subjectIndex < subjectsList.size()) {
+            subject = subjectsList.get(subjectIndex);
+        }
+        
+        // Get attendance records
         List<Attendance> list = attendanceDAO.getAttendanceByStudent(student.getId());
         
         if (subject != null) {
             list.removeIf(a -> a.getSubjectId() != subject.getId());
         }
         
-        // Sort by date (most recent first)
+        // Sort by date (newest first)
         list.sort((a, b) -> b.getDate().compareTo(a.getDate()));
         
         for (Attendance a : list) {
@@ -532,227 +346,123 @@ public class ViewAttendanceFrame extends JPanel {
             });
         }
         
-        // Calculate statistics
+        // Calculate stats
         int total = list.size();
         int present = (int) list.stream().filter(a -> "PRESENT".equals(a.getStatus())).count();
         int absent = total - present;
         double percentage = total > 0 ? (present * 100.0 / total) : 0;
         
-        // Update student stats panel
-        updateStudentStats(student, subject, total, present, absent, percentage);
+        // Update student stats
+        updateStudentStats(student, total, present, absent, percentage);
         
         // Update summary
         if (subject != null) {
-            summaryLabel.setText(String.format(
-                "📊 Student: %s (%s) | Subject: %s | Attendance: %.1f%% | Present: %d | Absent: %d | Total Classes: %d",
-                student.getName(), student.getStudentId(), subject.getSubjectName(),
-                percentage, present, absent, total));
+            summaryLabel.setText(String.format("%s (%s) - %s: %.1f%% (%d/%d)", 
+                student.getName(), student.getStudentId(), subject.getSubjectName(), percentage, present, total));
         } else {
-            summaryLabel.setText(String.format(
-                "📊 Student: %s (%s) | Overall Attendance: %.1f%% | Present: %d | Absent: %d | Total Classes: %d",
-                student.getName(), student.getStudentId(), percentage, present, absent, total));
+            summaryLabel.setText(String.format("%s (%s): %.1f%% (%d/%d)", 
+                student.getName(), student.getStudentId(), percentage, present, total));
         }
         
-        // Repaint chart
-        chartPanel.repaint();
+        repaint();
     }
     
-    private void updateStudentStats(Student student, Subject subject, int total, int present, int absent, double percentage) {
-        statsPanel.removeAll();
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridwidth = 2;
-        
-        // Title
-        JLabel title = new JLabel("👤 STUDENT STATISTICS");
-        title.setFont(new Font("Arial", Font.BOLD, 16));
-        title.setForeground(new Color(44, 62, 80));
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        statsPanel.add(title, gbc);
-        
-        // Separator
-        JSeparator sep = new JSeparator();
-        sep.setForeground(new Color(200, 200, 200));
-        gbc.gridy = 1;
-        statsPanel.add(sep, gbc);
-        
-        // Student Info
-        gbc.gridwidth = 1;
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        statsPanel.add(new JLabel("📌 Roll No:"), gbc);
-        gbc.gridx = 1;
-        JLabel rollVal = new JLabel(student.getStudentId());
-        rollVal.setFont(new Font("Arial", Font.BOLD, 13));
-        statsPanel.add(rollVal, gbc);
-        
-        gbc.gridy = 3;
-        gbc.gridx = 0;
-        statsPanel.add(new JLabel("👤 Name:"), gbc);
-        gbc.gridx = 1;
-        JLabel nameVal = new JLabel(student.getName());
-        nameVal.setFont(new Font("Arial", Font.BOLD, 13));
-        statsPanel.add(nameVal, gbc);
-        
-        gbc.gridy = 4;
-        gbc.gridx = 0;
-        statsPanel.add(new JLabel("🏛️ Department:"), gbc);
-        gbc.gridx = 1;
-        JLabel deptVal = new JLabel(student.getDepartment());
-        deptVal.setFont(new Font("Arial", Font.BOLD, 13));
-        statsPanel.add(deptVal, gbc);
-        
-        gbc.gridy = 5;
-        gbc.gridx = 0;
-        statsPanel.add(new JLabel("📚 Semester:"), gbc);
-        gbc.gridx = 1;
-        JLabel semVal = new JLabel("Sem " + student.getSemester());
-        semVal.setFont(new Font("Arial", Font.BOLD, 13));
-        statsPanel.add(semVal, gbc);
-        
-        // Attendance Stats
-        gbc.gridy = 6;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(15, 8, 8, 8);
-        JLabel statsTitle = new JLabel("📊 ATTENDANCE SUMMARY");
-        statsTitle.setFont(new Font("Arial", Font.BOLD, 14));
-        statsTitle.setForeground(new Color(44, 62, 80));
-        statsPanel.add(statsTitle, gbc);
-        
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.gridy = 7;
-        gbc.gridx = 0;
-        statsPanel.add(new JLabel("✅ Present:"), gbc);
-        gbc.gridx = 1;
-        JLabel presentVal = new JLabel(String.valueOf(present));
-        presentVal.setFont(new Font("Arial", Font.BOLD, 14));
-        presentVal.setForeground(PRESENT_COLOR);
-        statsPanel.add(presentVal, gbc);
-        
-        gbc.gridy = 8;
-        gbc.gridx = 0;
-        statsPanel.add(new JLabel("❌ Absent:"), gbc);
-        gbc.gridx = 1;
-        JLabel absentVal = new JLabel(String.valueOf(absent));
-        absentVal.setFont(new Font("Arial", Font.BOLD, 14));
-        absentVal.setForeground(ABSENT_COLOR);
-        statsPanel.add(absentVal, gbc);
-        
-        gbc.gridy = 9;
-        gbc.gridx = 0;
-        statsPanel.add(new JLabel("📚 Total Classes:"), gbc);
-        gbc.gridx = 1;
-        JLabel totalVal = new JLabel(String.valueOf(total));
-        totalVal.setFont(new Font("Arial", Font.BOLD, 14));
-        totalVal.setForeground(OVERALL_COLOR);
-        statsPanel.add(totalVal, gbc);
-        
-        gbc.gridy = 10;
-        gbc.gridx = 0;
-        statsPanel.add(new JLabel("📈 Percentage:"), gbc);
-        gbc.gridx = 1;
-        JLabel percentVal = new JLabel(String.format("%.1f%%", percentage));
-        percentVal.setFont(new Font("Arial", Font.BOLD, 18));
+    private void updateStudentStats(Student student, int total, int present, int absent, double percentage) {
+        rollNoVal.setText(student.getStudentId());
+        nameVal.setText(student.getName());
+        deptVal.setText(student.getDepartment());
+        semVal.setText("Sem " + student.getSemester());
+        presentVal.setText(String.valueOf(present));
+        absentVal.setText(String.valueOf(absent));
+        totalVal.setText(String.valueOf(total));
+        percentVal.setText(String.format("%.1f%%", percentage));
         
         // Color code percentage
         if (percentage >= 75) {
-            percentVal.setForeground(PRESENT_COLOR);
+            percentVal.setForeground(new Color(46, 204, 113));
         } else if (percentage >= 60) {
-            percentVal.setForeground(WARNING_COLOR);
+            percentVal.setForeground(new Color(241, 196, 15));
         } else {
-            percentVal.setForeground(ABSENT_COLOR);
+            percentVal.setForeground(new Color(231, 76, 60));
         }
-        statsPanel.add(percentVal, gbc);
+    }
+    
+    private void resetStudentStats() {
+        rollNoVal.setText("-");
+        nameVal.setText("-");
+        deptVal.setText("-");
+        semVal.setText("-");
+        presentVal.setText("0");
+        absentVal.setText("0");
+        totalVal.setText("0");
+        percentVal.setText("0%");
+        percentVal.setForeground(Color.BLACK);
+    }
+    
+    private void loadOverallStatistics() {
+        // Get counts
+        int studentCount = studentDAO.getAllStudents().size();
+        int subjectCount = subjectDAO.getAllSubjects().size();
         
-        statsPanel.revalidate();
-        statsPanel.repaint();
+        // Calculate overall attendance
+        int totalRecords = 0;
+        int totalPresent = 0;
+        
+        for (Student s : studentDAO.getAllStudents()) {
+            List<Attendance> list = attendanceDAO.getAttendanceByStudent(s.getId());
+            totalRecords += list.size();
+            totalPresent += list.stream().filter(a -> "PRESENT".equals(a.getStatus())).count();
+        }
+        
+        double percentage = totalRecords > 0 ? (totalPresent * 100.0 / totalRecords) : 0;
+        
+        // Update labels
+        totalStudentsLabel.setText(String.valueOf(studentCount));
+        totalSubjectsLabel.setText(String.valueOf(subjectCount));
+        totalRecordsLabel.setText(String.valueOf(totalRecords));
+        overallPercentLabel.setText(String.format("%.1f%%", percentage));
+        
+        // Color code overall percentage
+        if (percentage >= 75) {
+            overallPercentLabel.setForeground(new Color(46, 204, 113));
+        } else if (percentage >= 60) {
+            overallPercentLabel.setForeground(new Color(241, 196, 15));
+        } else {
+            overallPercentLabel.setForeground(new Color(231, 76, 60));
+        }
     }
     
     public void refreshData() {
-        loadStudents();
-        loadSubjects();
-    }
-    
-    private void loadStudents() {
-        Student selected = (Student) studentBox.getSelectedItem();
-        String selectedId = selected != null ? selected.getStudentId() : null;
-        
+        // Load students
         studentBox.removeAllItems();
-        studentBox.addItem(null);
+        studentBox.addItem("-- Select Student --");
         
-        List<Student> students = studentDAO.getAllStudents();
-        for (Student s : students) {
-            studentBox.addItem(s);
+        studentsList = studentDAO.getAllStudents();
+        for (Student s : studentsList) {
+            studentBox.addItem(s.getStudentId() + " - " + s.getName());
         }
         
-        if (selectedId != null) {
-            for (int i = 0; i < studentBox.getItemCount(); i++) {
-                Student s = studentBox.getItemAt(i);
-                if (s != null && selectedId.equals(s.getStudentId())) {
-                    studentBox.setSelectedIndex(i);
-                    break;
-                }
-            }
-        }
-        
-        studentBox.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object v,
-                    int i, boolean s, boolean f) {
-                if (v == null) v = "-- Select Student --";
-                else if (v instanceof Student) {
-                    Student st = (Student) v;
-                    v = st.getName() + " (" + st.getStudentId() + ")";
-                }
-                return super.getListCellRendererComponent(list, v, i, s, f);
-            }
-        });
-    }
-    
-    private void loadSubjects() {
-        Subject selected = (Subject) subjectBox.getSelectedItem();
-        String selectedCode = selected != null ? selected.getSubjectCode() : null;
-        
+        // Load subjects
         subjectBox.removeAllItems();
-        subjectBox.addItem(null);
+        subjectBox.addItem("-- All Subjects --");
         
-        List<Subject> subjects = subjectDAO.getAllSubjects();
-        for (Subject s : subjects) {
-            subjectBox.addItem(s);
+        subjectsList = subjectDAO.getAllSubjects();
+        for (Subject s : subjectsList) {
+            subjectBox.addItem(s.getSubjectCode() + " - " + s.getSubjectName());
         }
         
-        if (selectedCode != null) {
-            for (int i = 0; i < subjectBox.getItemCount(); i++) {
-                Subject s = subjectBox.getItemAt(i);
-                if (s != null && selectedCode.equals(s.getSubjectCode())) {
-                    subjectBox.setSelectedIndex(i);
-                    break;
-                }
-            }
-        }
+        // Reset stats
+        resetStudentStats();
+        tableModel.setRowCount(0);
+        summaryLabel.setText("Select a student to view attendance details");
         
-        subjectBox.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object v,
-                    int i, boolean s, boolean f) {
-                if (v == null) v = "-- All Subjects --";
-                else if (v instanceof Subject) {
-                    Subject sub = (Subject) v;
-                    v = sub.getSubjectName() + " (" + sub.getSubjectCode() + ")";
-                }
-                return super.getListCellRendererComponent(list, v, i, s, f);
-            }
-        });
+        // Load overall stats
+        loadOverallStatistics();
+        
+        repaint();
     }
     
     public void refreshView() {
         refreshData();
-        loadStudentAttendance();
-        loadOverallStatistics();
     }
 }
